@@ -72,12 +72,12 @@
   --pad:clamp(1.25rem,5vw,6rem);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth; overflow-x:hidden; -webkit-text-size-adjust:100%}
 body{
   background:var(--bg); color:var(--ink);
   font-family:var(--sans); font-weight:300;
   font-size:clamp(15px,1.05vw,17px); line-height:1.75;
-  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden; width:100%; max-width:100%;
 }
 ::selection{background:var(--red); color:var(--ink)}
 img{max-width:100%; display:block}
@@ -141,7 +141,7 @@ a{color:inherit; text-decoration:none}
   font-size:.62rem; letter-spacing:.4em; text-transform:uppercase; color:var(--ink-faint); writing-mode:vertical-rl}
 .hero__scroll::after{content:""; width:1px; height:64px; background:linear-gradient(180deg,var(--ink-faint),transparent); animation:drip 2.2s ease-in-out infinite}
 @keyframes drip{0%{transform:scaleY(0); transform-origin:top}45%{transform:scaleY(1); transform-origin:top}55%{transform:scaleY(1); transform-origin:bottom}100%{transform:scaleY(0); transform-origin:bottom}}
-@media (max-width:860px){ .hero__kanji{right:-6vw; opacity:0} .hero__scroll{display:none} }
+@media (max-width:860px){ .hero__kanji{display:none} .hero__scroll{display:none} }
 
 /* ============ INK BREAK ============ */
 .ink-break{position:relative; height:22vh; min-height:130px; display:flex; align-items:center; overflow:hidden; background:var(--bg)}
@@ -200,11 +200,23 @@ h2 em{font-style:italic; color:var(--gold); font-weight:400}
 .monday{display:flex; align-items:center; gap:1.2rem; border:1px solid rgba(216,65,45,.5); padding:1rem 1.6rem}
 .monday .tag{font-family:var(--serif); font-weight:600; color:var(--red); font-size:1.15rem; white-space:nowrap}
 .monday p{font-size:.82rem; color:var(--ink-dim)}
-/* mobile: native snap rail */
+/* mobile: menu becomes a clean vertical grid — no nested horizontal scrolling */
 @media (max-width:860px), (pointer:coarse){
-  .rail__wrap{overflow-x:auto; -webkit-overflow-scrolling:touch; scroll-snap-type:x mandatory; scrollbar-width:none}
-  .rail__wrap::-webkit-scrollbar{display:none}
-  .card{scroll-snap-align:center; width:min(74vw,330px)}
+  .rail__wrap{overflow:visible}
+  .rail{display:grid; grid-template-columns:1fr 1fr; gap:1.8rem 1.1rem; width:auto; padding:0 var(--pad)}
+  .card{width:auto}
+  .card__img{aspect-ratio:4/5}
+  .card h3{font-size:1.28rem; margin-top:1rem}
+  .card--cta{grid-column:1/-1}
+  .card--cta .inner{aspect-ratio:auto; padding:1.9rem 1.6rem; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem 1.4rem}
+  .card--cta .big{font-size:2rem}
+  .card--cta p{flex:1; min-width:11rem}
+  .card--cta .card__jp{display:none}
+  .menu__hint{display:none}
+}
+@media (max-width:540px){
+  .rail{grid-template-columns:1fr; gap:2.2rem}
+  .card__img{aspect-ratio:16/11}
 }
 
 /* ============ SPACE ============ */
@@ -225,6 +237,7 @@ h2 em{font-style:italic; color:var(--gold); font-weight:400}
 @media (max-width:860px){
   .panel{grid-template-columns:1fr; padding:2.2rem 0}
   .panel__img,.panel--flip .panel__img{grid-column:1/-1; order:1; aspect-ratio:4/3}
+  .panel__img img{height:100%}
   .panel__txt,.panel--flip .panel__txt{grid-column:1/-1; order:2; padding:1.4rem 0 0; text-align:left}
   .panel--flip .panel__txt p{margin-left:0}
 }
@@ -317,6 +330,13 @@ html.lang-ja .hours .t{font-family:var(--sans);font-size:.95rem}
   .nav__brand{font-size:1.02rem;gap:.5rem}
   .nav__right{gap:.7rem}
   .nav__tel{padding:.5em .85em;font-size:.62rem;letter-spacing:.05em}
+}
+/* touch/mobile hardening: drop GPU-heavy fixed grain, keep scroll crisp & native */
+@media (max-width:860px), (pointer:coarse){
+  html{scroll-behavior:auto}
+  .grain{display:none}
+  .kanji-v{opacity:.1}
+  .hero__title .t2{letter-spacing:.02em}
 }
 
 /* ============ MOTION SAFETY ============ */
@@ -735,11 +755,13 @@ html.lang-ja .hours .t{font-family:var(--sans);font-size:.95rem}
     document.getElementById("railHint").textContent = "Swipe →";
   }
 
-  /* ---------- parallax images ---------- */
-  document.querySelectorAll("[data-para]").forEach(function(img){
-    gsap.fromTo(img,{yPercent:-7},{yPercent:7, ease:"none",
-      scrollTrigger:{ trigger: img.closest("section,div"), start:"top bottom", end:"bottom top", scrub:true }});
-  });
+  /* ---------- parallax images (fine-pointer / desktop only — static & smooth on touch) ---------- */
+  if(!mobile){
+    document.querySelectorAll("[data-para]").forEach(function(img){
+      gsap.fromTo(img,{yPercent:-7},{yPercent:7, ease:"none",
+        scrollTrigger:{ trigger: img.closest("section,div"), start:"top bottom", end:"bottom top", scrub:true }});
+    });
+  }
 
   /* ---------- magnetic buttons (fine pointers only) ---------- */
   if(!coarse){
